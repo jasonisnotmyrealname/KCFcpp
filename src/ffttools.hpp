@@ -148,16 +148,16 @@ cv::Mat magnitude(cv::Mat img)
     return res;
 }
 
-cv::Mat complexMultiplication(cv::Mat a, cv::Mat b)
+cv::Mat complexMultiplication(cv::Mat a, cv::Mat b)   
 {
     std::vector<cv::Mat> pa;
     std::vector<cv::Mat> pb;
-    cv::split(a, pa);
-    cv::split(b, pb);
+    cv::split(a, pa); //实部
+    cv::split(b, pb); //虚部
 
     std::vector<cv::Mat> pres;
-    pres.push_back(pa[0].mul(pb[0]) - pa[1].mul(pb[1]));
-    pres.push_back(pa[0].mul(pb[1]) + pa[1].mul(pb[0]));
+    pres.push_back(pa[0].mul(pb[0]) - pa[1].mul(pb[1]));    //实部
+    pres.push_back(pa[0].mul(pb[1]) + pa[1].mul(pb[0]));    //虚部
 
     cv::Mat res;
     cv::merge(pres, res);
@@ -177,7 +177,8 @@ cv::Mat complexDivision(cv::Mat a, cv::Mat b)
     std::vector<cv::Mat> pres;
 
     pres.push_back((pa[0].mul(pb[0]) + pa[1].mul(pb[1])).mul(divisor));
-    pres.push_back((pa[1].mul(pb[0]) + pa[0].mul(pb[1])).mul(divisor));
+//	pres.push_back((pa[1].mul(pb[0]) + pa[0].mul(pb[1])).mul(divisor));
+    pres.push_back((pa[1].mul(pb[0]) - pa[0].mul(pb[1])).mul(divisor)); //zjx:此处修改为减号，源程序应该是错的
 
     cv::Mat res;
     cv::merge(pres, res);

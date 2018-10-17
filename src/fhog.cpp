@@ -71,7 +71,7 @@
 // int getFeatureMaps(const IplImage * image, const int k, featureMap **map);
 // INPUT
 // image             - selected subimage
-// k                 - size of cells
+// k                 - size of cells  每个cell占的像素数量
 // OUTPUT
 // map               - feature map
 // RESULT
@@ -109,17 +109,17 @@ int getFeatureMaps(const IplImage* image, const int k, CvLSVMFeatureMapCaskade *
 
     numChannels = image->nChannels;
 
-    dx    = cvCreateImage(cvSize(image->width, image->height), 
+    dx    = cvCreateImage(cvSize(image->width, image->height), //x轴方向拉普拉斯算子滤波后的图
                           IPL_DEPTH_32F, 3);
     dy    = cvCreateImage(cvSize(image->width, image->height), 
                           IPL_DEPTH_32F, 3);
 
-    sizeX = width  / k;
+    sizeX = width  / k;   //cell个数
     sizeY = height / k;
-    px    = 3 * NUM_SECTOR; 
+    px    = 3 * NUM_SECTOR;   //NUM_SECTOR:bin的个数,3是指channel?
     p     = px;
     stringSize = sizeX * p;
-    allocFeatureMapObject(map, sizeX, sizeY, p);
+    allocFeatureMapObject(map, sizeX, sizeY, p);   //开内存,cell的总个数*每个cell的维度(p)
 
     cvFilter2D(image, dx, &kernel_dx, cvPoint(-1, 0));
     cvFilter2D(image, dy, &kernel_dy, cvPoint(0, -1));
@@ -127,15 +127,15 @@ int getFeatureMaps(const IplImage* image, const int k, CvLSVMFeatureMapCaskade *
     float arg_vector;
     for(i = 0; i <= NUM_SECTOR; i++)
     {
-        arg_vector    = ( (float) i ) * ( (float)(PI) / (float)(NUM_SECTOR) );
+        arg_vector    = ( (float) i ) * ( (float)(PI) / (float)(NUM_SECTOR) );  //每个bin的起始角度
         boundary_x[i] = cosf(arg_vector);
         boundary_y[i] = sinf(arg_vector);
     }/*for(i = 0; i <= NUM_SECTOR; i++) */
 
-    r    = (float *)malloc( sizeof(float) * (width * height));
-    alfa = (int   *)malloc( sizeof(int  ) * (width * height * 2));
+    r    = (float *)malloc( sizeof(float) * (width * height));  //模
+    alfa = (int   *)malloc( sizeof(int  ) * (width * height * 2));   //??
 
-    for(j = 1; j < height - 1; j++)
+    for(j = 1; j < height - 1; j++)  //遍历dx、dy中的所有像素
     {
         datadx = (float*)(dx->imageData + dx->widthStep * j);
         datady = (float*)(dy->imageData + dy->widthStep * j);
@@ -150,8 +150,8 @@ int getFeatureMaps(const IplImage* image, const int k, CvLSVMFeatureMapCaskade *
             {
                 tx = (datadx[i * numChannels + ch]);
                 ty = (datady[i * numChannels + ch]);
-                magnitude = sqrtf(tx * tx + ty * ty);
-                if(magnitude > r[j * width + i])
+                magnitude = sqrtf(tx * tx + ty * ty);    //每个channel梯度的模值
+                if(magnitude > r[j * width + i])  //取channel中最大的
                 {
                     r[j * width + i] = magnitude;
                     c = ch;
@@ -162,9 +162,9 @@ int getFeatureMaps(const IplImage* image, const int k, CvLSVMFeatureMapCaskade *
             
             max  = boundary_x[0] * x + boundary_y[0] * y;
             maxi = 0;
-            for (kk = 0; kk < NUM_SECTOR; kk++) 
+            for (kk = 0; kk < NUM_SECTOR; kk++) //将每个梯度投影到每个bin的空间中，求出投影后模最大的(max)和其对应的bin索引号(maxi)
             {
-                dotProd = boundary_x[kk] * x + boundary_y[kk] * y;
+                dotProd = boundary_x[kk] * x + boundary_y[kk] * y;  
                 if (dotProd > max) 
                 {
                     max  = dotProd;

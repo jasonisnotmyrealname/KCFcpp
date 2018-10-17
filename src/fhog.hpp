@@ -63,12 +63,13 @@
 
 // DataType: STRUCT featureMap
 // FEATURE MAP DESCRIPTION
-//   Rectangular map (sizeX x sizeY), 
+//   Rectangular map (sizeX x sizeY), sizeX*sizeY表示cell的个数
 //   every cell stores feature vector (dimension = numFeatures)
 // map             - matrix of feature vectors
 //                   to set and get feature vectors (i,j) 
 //                   used formula map[(j * sizeX + i) * p + k], where
 //                   k - component of feature vector in cell (i, j)
+//                   p - bin的维度?
 typedef struct{
     int sizeX;
     int sizeY;

@@ -4,7 +4,7 @@ project(test)
 find_package(OpenCV REQUIRED)
 
 if(NOT WIN32)
-ADD_DEFINITIONS("-std=c++0x -O3")
+ADD_DEFINITIONS("-std=gnu++11")
 endif(NOT WIN32)
 
 include_directories(src) 

@@ -88,11 +88,13 @@ the use of this software, even if advised of the possibility of such damage.
 #define _OPENCV_KCFTRACKER_HPP_
 #endif
 
+//#define REDETECT
+
 class KCFTracker : public Tracker
 {
 public:
     // Constructor
-    KCFTracker(bool hog = true, bool fixed_window = true, bool multiscale = true, bool lab = true);
+    KCFTracker(bool hog = true, bool fixed_window = false, bool multiscale = true, bool lab = true,bool cn =false);
 
     // Initialize tracker 
     virtual void init(const cv::Rect &roi, cv::Mat image);
@@ -101,6 +103,7 @@ public:
     virtual cv::Rect update(cv::Mat image);
 
     float interp_factor; // linear interpolation factor for adaptation
+	float compression_learning_rate;//params.compression_learning_rate = 0.15;   % learning rate for the adaptive dimensionality reduction(denoted "mu" in the paper)
     float sigma; // gaussian kernel bandwidth
     float lambda; // regularization
     int cell_size; // HOG cell size
@@ -110,13 +113,21 @@ public:
     int template_size; // template size
     float scale_step; // scale step for multi-scale estimation
     float scale_weight;  // to downweight detection scores of other scales for added stability
+	float peak_value_valid_threshold;   //detect阈值   
+	float peak_value_invalid_threshold;   //detect阈值   
+	bool d_valid; //detect是否成功
+	float re_scale; //re-detect时的尺度
+	float bb_shift;  //re-detect时box的shift值
+	std::vector< cv::Rect_<float> > candidate_ROI;  //re-detect时候选的ROI列表
+	float angle_step;   //旋转时的估计
+	int num_compressed_dim;  //PCA后的维度
 
 protected:
     // Detect object in the current frame.
     cv::Point2f detect(cv::Mat z, cv::Mat x, float &peak_value);
 
     // train tracker with a single image
-    void train(cv::Mat x, float train_interp_factor);
+	void train(cv::Mat x, float train_interp_factor, const bool inithann);
 
     // Evaluates a Gaussian kernel with bandwidth SIGMA for all relative shifts between input images X and Y, which must both be MxN. They must    also be periodic (ie., pre-processed with a cosine window).
     cv::Mat gaussianCorrelation(cv::Mat x1, cv::Mat x2);
@@ -125,7 +136,7 @@ protected:
     cv::Mat createGaussianPeak(int sizey, int sizex);
 
     // Obtain sub-window from image, with replication-padding and extract features
-    cv::Mat getFeatures(const cv::Mat & image, bool inithann, float scale_adjust = 1.0f);
+	cv::Mat getFeatures(const cv::Mat & image, const cv::Rect_<float> roi,const float scale,const bool inithann,const float scale_adjust = 1.0f);
 
     // Initialize Hanning window. Function called only in the first frame.
     void createHanningMats();
@@ -134,18 +145,25 @@ protected:
     float subPixelPeak(float left, float center, float right);
 
     cv::Mat _alphaf;
-    cv::Mat _prob;
-    cv::Mat _tmpl;
+    cv::Mat _prob;   //paper中的y，就是标签
+    cv::Mat _tmpl;   //Paper中的x，就是模板
     cv::Mat _num;
     cv::Mat _den;
     cv::Mat _labCentroids;
+	cv::Mat data_mean, cov_matrix, data_matrix;
+	cv::Mat pca_variances, pca_basis;
+	cv::Mat old_cov_matrix;
+	cv::Mat projection_matrix;
+
 
 private:
     int size_patch[3];
     cv::Mat hann;
     cv::Size _tmpl_sz;
     float _scale;
+	float _angle;
     int _gaussian_size;
     bool _hogfeatures;
     bool _labfeatures;
+	bool _cnfeatures;
 };

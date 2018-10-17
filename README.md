@@ -24,10 +24,10 @@ Description: KCF on HOG and Lab features, ported to C++ OpenCV. The Lab features
 The CSK tracker [2] is also implemented as a bonus, simply by using raw grayscale as features (the filter becomes single-channel).   
 
 ### Compilation instructions ###
-There are no external dependencies other than OpenCV 3.0.0. Tested on a freshly installed Ubuntu 14.04.   
+在Ubuntu16.04上测试，使用opencv4
 
 1) cmake CMakeLists.txt   
-2) make   
+2) make -j4
 
 ### Running instructions ###
 
@@ -54,3 +54,7 @@ To include it in your project, without the VOT toolkit you just need to:
 
 	// Get the position of the object for the new frame
 	result = tracker.update(frame);
+
+# Update
+## 20181017
+add cn feature
