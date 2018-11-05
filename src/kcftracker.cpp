@@ -100,7 +100,7 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab,bo
 	output_sigma_factor = 0.125;
 	d_valid = true;
 	compression_learning_rate = 0.15;
-	num_compressed_dim = 2;
+	num_compressed_dim = 2;   //把colorname的通道由10压缩到2
 
     if (hog) {    // HOG
         // VOT
@@ -447,6 +447,7 @@ cv::Rect KCFTracker::update(cv::Mat image)
 	}*/
 	if (d_valid)  //更新模板x和alphaf
 	{
+		getFeatures(image, R, _scale, 0, 1.0f)
 		cv::Mat x = getFeatures(image, _roi, _scale, 0, 1);  //0表示更新时
 		if (_angle != 0)
 		{
@@ -699,6 +700,7 @@ void extractCN(cv::Mat patch_data, cv::Mat & cnFeatures) {
 	cv::Vec3b & pixel = patch_data.at<cv::Vec3b>(0, 0);
 	unsigned index;
 
+	//cnFeatures的大小和patch_data一样
 	if (cnFeatures.type() != CV_32FC(10))
 		cnFeatures = cv::Mat::zeros(patch_data.rows, patch_data.cols, CV_32FC(10));
 
@@ -806,24 +808,24 @@ cv::Mat KCFTracker::getFeatures(const cv::Mat & image, const cv::Rect_<float> ro
 	{
 		CV_Assert(z.channels() == 3);
 		extractCN(z, FeaturesMap);
-		size_patch[0] = FeaturesMap.rows;
-		size_patch[1] = FeaturesMap.cols;
-		size_patch[2] = FeaturesMap.channels();
+		size_patch[0] = FeaturesMap.rows;   //和z一样
+		size_patch[1] = FeaturesMap.cols;   //和z一样
+		size_patch[2] = FeaturesMap.channels();   //ColorName有10通道
 		FeaturesMap = FeaturesMap.reshape(1, size_patch[0] * size_patch[1]); // Procedure do deal with cv::Mat multichannel bug  channel变成1，宽度就是维度，高度就是roi.witdh*roi.height
 		FeaturesMap = FeaturesMap.t();   //求mat转置
 //		FeaturesMap = (FeaturesMap * projection_matrix);
 	}
-    else {
+    else {   //Gray特征,通道数量为1
         FeaturesMap = RectTools::getGrayImage(z);
-        FeaturesMap -= (float) 0.5; // In Paper;
+        FeaturesMap -= (float) 0.5; // In Paper;  范围变为(-0.5,0.5)
         size_patch[0] = z.rows;
         size_patch[1] = z.cols;
         size_patch[2] = 1;  
     }
     
     if (inithann) {
-        createHanningMats();
-    }
+        createHanningMats();  //Hanning Window和size_patch有关，而size_patch与特征类型、模板大小、padding大小有关
+    }  //输出的hann是一个2维矩阵（不管HOG\CN特征是多少维）
 //    FeaturesMap = hann.mul(FeaturesMap);
     return FeaturesMap;
 }

@@ -9,8 +9,8 @@ endif(NOT WIN32)
 
 include_directories(src) 
 FILE(GLOB_RECURSE sourcefiles "src/*.cpp")
-add_executable( KCF ${sourcefiles} )
-target_link_libraries( KCF ${OpenCV_LIBS})
+add_executable(KCF ${sourcefiles})
+target_link_libraries(KCF ${OpenCV_LIBS})
 
 
 

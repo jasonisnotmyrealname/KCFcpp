@@ -130,8 +130,8 @@ inline cv::Mat subwindow(const cv::Mat &in, const cv::Rect & window, int borderT
 
 inline cv::Mat getGrayImage(cv::Mat img)
 {
-    cv::cvtColor(img, img, CV_BGR2GRAY);  //
-    img.convertTo(img, CV_32F, 1 / 255.f);
+    cv::cvtColor(img, img, CV_BGR2GRAY);  //变成灰度
+    img.convertTo(img, CV_32F, 1 / 255.f);  //归一化
     return img;
 }
 
