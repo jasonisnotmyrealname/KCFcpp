@@ -109,6 +109,7 @@ cv::Mat fftd(cv::Mat img, bool backwards)
 
 #else
 */
+    //如果img只有一个通道，就添加一个通道作为虚部
     if (img.channels() == 1)
     {
         cv::Mat planes[] = {cv::Mat_<float> (img), cv::Mat_<float>::zeros(img.size())};
@@ -123,6 +124,7 @@ cv::Mat fftd(cv::Mat img, bool backwards)
 
 }
 
+//获得图像的实部
 cv::Mat real(cv::Mat img)
 {
     std::vector<cv::Mat> planes;
@@ -130,6 +132,8 @@ cv::Mat real(cv::Mat img)
     return planes[0];
 }
 
+
+//获得图像的虚部
 cv::Mat imag(cv::Mat img)
 {
     std::vector<cv::Mat> planes;
@@ -137,6 +141,7 @@ cv::Mat imag(cv::Mat img)
     return planes[1];
 }
 
+//HOG特征会用到
 cv::Mat magnitude(cv::Mat img)
 {
     cv::Mat res;
@@ -148,16 +153,44 @@ cv::Mat magnitude(cv::Mat img)
     return res;
 }
 
+
+//与opencv中mulSpectrums的功能一致
 cv::Mat complexMultiplication(cv::Mat a, cv::Mat b)   
 {
     std::vector<cv::Mat> pa;
     std::vector<cv::Mat> pb;
-    cv::split(a, pa); //实部
-    cv::split(b, pb); //虚部
+    cv::split(a, pa); 
+    cv::split(b, pb); 
 
+    //计算过程:
+    //a = a.real + j*a.img;
+    //b = b.real + j*b.img;
+    // a * b = (a.real * b.real - a.img * b.img) + j * (a.real*b.img + a.img * b.real)
     std::vector<cv::Mat> pres;
-    pres.push_back(pa[0].mul(pb[0]) - pa[1].mul(pb[1]));    //实部
-    pres.push_back(pa[0].mul(pb[1]) + pa[1].mul(pb[0]));    //虚部
+    pres.push_back(pa[0].mul(pb[0]) - pa[1].mul(pb[1]));     //pres[0] =a.real*b.real - a.img*b.img
+    pres.push_back(pa[0].mul(pb[1]) + pa[1].mul(pb[0]));     //pres[1] =a.real*b.img + a.img*b.real
+
+    cv::Mat res;
+    cv::merge(pres, res);  //将实部pres[0]和虚部pres[1]合成一个多通道的Mat
+
+    return res;
+}
+
+//与complexMultiplication功能相似，只不过是共轭相乘
+cv::Mat complexMultiplication_conj(cv::Mat a, cv::Mat b)   
+{
+    std::vector<cv::Mat> pa;
+    std::vector<cv::Mat> pb;
+    cv::split(a, pa); 
+    cv::split(b, pb); 
+
+    //计算过程:
+    //a = a.real + j*a.img;
+    //b = b.real + j*b.img;
+    // a * (*b) = (a.real * b.real + a.img * b.img) + j * (- a.real*b.img + a.img * b.real)
+    std::vector<cv::Mat> pres;
+    pres.push_back(pa[0].mul(pb[0]) + pa[1].mul(pb[1]));     //pres[0] = a.real*b.real - a.img*b.img
+    pres.push_back(pa[1].mul(pb[0]) - pa[0].mul(pb[1]));     //pres[1] = - a.real*b.img + a.img*b.real
 
     cv::Mat res;
     cv::merge(pres, res);
@@ -165,6 +198,7 @@ cv::Mat complexMultiplication(cv::Mat a, cv::Mat b)
     return res;
 }
 
+//复数的除法
 cv::Mat complexDivision(cv::Mat a, cv::Mat b)
 {
     std::vector<cv::Mat> pa;
@@ -172,6 +206,11 @@ cv::Mat complexDivision(cv::Mat a, cv::Mat b)
     cv::split(a, pa);
     cv::split(b, pb);
 
+    //计算过程:
+    //a = a.real + j*a.img;
+    //b = b.real + j*b.img;
+    //a / b = a * conj(b)/b* conj(b) =(a.real * b.real + a.img * b.img) + j * (- a.real*b.img + a.img * b.real)
+    //其中b* conj(b)= b.real^2 + b.img^2;
     cv::Mat divisor = 1. / (pb[0].mul(pb[0]) + pb[1].mul(pb[1]));
 
     std::vector<cv::Mat> pres;
@@ -185,6 +224,7 @@ cv::Mat complexDivision(cv::Mat a, cv::Mat b)
     return res;
 }
 
+//将图像按照顺时针分为q0/q1/q2/q3，然后将对角的q0/q3对调，q1/q4对调
 void rearrange(cv::Mat &img)
 {
     // img = img(cv::Rect(0, 0, img.cols & -2, img.rows & -2));

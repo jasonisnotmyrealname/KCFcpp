@@ -503,8 +503,9 @@ cv::Point2f KCFTracker::detect(cv::Mat z, cv::Mat x, float &peak_value)
     peak_value = (float) pv;
 
     //subpixel peak estimation, coordinates will be non-integer
+	//必须要有，否则tracker会漂
     cv::Point2f p((float)pi.x, (float)pi.y);
-
+	//subPixelPeak是针对peak的值进行内插，求出亚像元的pixel值
     if (pi.x > 0 && pi.x < res.cols-1) {
         p.x += subPixelPeak(res.at<float>(pi.y, pi.x-1), peak_value, res.at<float>(pi.y, pi.x+1));
     }
@@ -526,11 +527,11 @@ void KCFTracker::train(cv::Mat x, float train_interp_factor, const bool inithann
     using namespace FFTTools;
 	cv::Mat x_pro;
 	//更新z(_tmpl)
-	if (inithann)
+	if (inithann)   //init
 	{
 		_tmpl = x;
 	}
-	else
+	else    //update
 	{
 		_tmpl = (1 - train_interp_factor) * _tmpl + (train_interp_factor)* x;
 	}
@@ -607,8 +608,6 @@ void KCFTracker::train(cv::Mat x, float train_interp_factor, const bool inithann
     cv::Mat alphaf = complexDivision(_prob, (fftd(k) + lambda));  
     _alphaf = (1 - train_interp_factor) * _alphaf + (train_interp_factor) * alphaf;
 
-
-
     /*cv::Mat kf = fftd(gaussianCorrelation(x, x));
     cv::Mat num = complexMultiplication(kf, _prob);
     cv::Mat den = complexMultiplication(kf, kf + lambda);
@@ -660,13 +659,13 @@ cv::Mat KCFTracker::gaussianCorrelation(cv::Mat x1, cv::Mat x2)
 	}
     // Gray features
     else {
-        cv::mulSpectrums(fftd(x1), fftd(x2), c, 0, true);
+        cv::mulSpectrums(fftd(x1), fftd(x2), c, 0, true);   //mulSpectrums用于两个复数矩阵的相乘，最后一个true表示对第二个乘数求共轭
         c = fftd(c, true);  //表示IFFT
         rearrange(c);
         c = real(c);
     }
     cv::Mat d; 
-    cv::max(( (cv::sum(x1.mul(x1))[0] + cv::sum(x2.mul(x2))[0])- 2. * c) / (size_patch[0]*size_patch[1]*size_patch[2]) , 0, d);
+    cv::max(( (cv::sum(x1.mul(x1))[0] + cv::sum(x2.mul(x2))[0])- 2. * c) / (size_patch[0]*size_patch[1]*size_patch[2]) , 0, d);  //cv::sum返回的结果是一个vector(why?)，[0]就是取结果的值
 
     cv::Mat k;
     cv::exp((-d / (sigma * sigma)), k);
